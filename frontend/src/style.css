@@ -1,0 +1,68 @@
+/* Global styles — e-commerce customer-service look, brand blue #1E6FFF (PRD F16). */
+
+:root {
+  --brand: #1e6fff;
+  --brand-dark: #1859d8;
+  --brand-light: #eaf1ff;
+  --text-main: #1f2329;
+  --text-sub: #6b7280;
+  --bg: #f5f7fa;
+  --panel-bg: #ffffff;
+  --border: #e5e7eb;
+
+  /* Element Plus primary override (F17: unified EP components). */
+  --el-color-primary: #1e6fff;
+  --el-color-primary-light-3: #4d8cff;
+  --el-color-primary-light-5: #7dabff;
+  --el-color-primary-light-7: #adc9ff;
+  --el-color-primary-light-8: #c5d9ff;
+  --el-color-primary-light-9: #deebff;
+  --el-color-primary-dark-2: #1859d8;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family:
+    'PingFang SC',
+    'Microsoft YaHei',
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Shared "online" status dot (chat header + sidebar agent card). */
+.online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+}
+
+/* Slim scrollbars for the chat area. */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
