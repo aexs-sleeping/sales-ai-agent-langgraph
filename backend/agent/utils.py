@@ -2,6 +2,11 @@ from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableLambda
 from langgraph.prebuilt import ToolNode
 
+# Prefix stamped onto the ToolMessages produced by handle_tool_error. The FastAPI
+# SSE layer uses it to mark tool_status(error) frames, so it lives here as the
+# single source of truth for the "tool failed" signal.
+TOOL_ERROR_PREFIX = "Error:"
+
 
 def handle_tool_error(state) -> dict:
     error = state.get("error")
@@ -9,7 +14,7 @@ def handle_tool_error(state) -> dict:
     return {
         "messages": [
             ToolMessage(
-                content=f"Error: {repr(error)}\n please fix your mistakes.",
+                content=f"{TOOL_ERROR_PREFIX} {repr(error)}\n please fix your mistakes.",
                 tool_call_id=tc["id"],
             )
             for tc in tool_calls
