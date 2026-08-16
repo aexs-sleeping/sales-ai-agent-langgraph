@@ -1,11 +1,15 @@
 import json
 import uuid
+from pathlib import Path
 
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.messages.tool import ToolMessage
 
-from virtual_sales_agent.graph import graph
+from agent.graph import graph
+
+# Repo root, used to locate shared assets regardless of the current working directory.
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def set_page_config():
@@ -20,7 +24,7 @@ def set_page_style():
     st.markdown(
         f"""
         <style>
-        {open("assets/style.css").read()}
+        {(REPO_ROOT / "assets" / "style.css").read_text(encoding="utf-8")}
         </style>
     """,
         unsafe_allow_html=True,
@@ -91,7 +95,7 @@ def setup_sidebar():
             st.rerun()
 
         if st.button("🔍 Visualize Workflow", use_container_width=True):
-            st.image("assets/graph.png")
+            st.image(str(REPO_ROOT / "assets" / "graph.png"))
 
         st.markdown(
             """

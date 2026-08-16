@@ -72,26 +72,28 @@ Here's a breakdown of the project's directory structure:
 
 ```
 .
-├── assets/
-│   ├── agent_workflow.png    # Diagram
-│   ├── demo.gif              # Demo gif
-│   ├── graph.png             # Agent workflow diagram
-│   └── style.css             # Streamlit custom styling
-├── database/
+├── backend/
+│   ├── agent/                    # LangGraph agent logic
+│   │   ├── graph.py              # Agent state machine and graph definition
+│   │   ├── tools.py              # Custom tools used by the agent
+│   │   └── utils.py              # Utility functions for the agent
+│   ├── database/                 # Database access layer
+│   │   ├── db_manager.py         # Handles database interactions
+│   │   └── config.py             # Database connection configuration
 │   ├── db/
 │   │   ├── products.json         # Bot product data (initial)
 │   │   └── schemas.sql           # SQL schema definitions
-│   ├── db_manager.py             # Handles database interactions
-│   └── config.py                 # Database connection configuration
-├── virtual_sales_agent/
-│   ├── graph.py                  # LangGraph agent state machine and logic
-│   ├── tools.py                  # Custom tools used by the agent
-│   └── utils_functions.py        # Utility functions for the agent
+│   ├── main.py                   # Main Streamlit app
+│   └── setup_database.py         # Script to initialize the database
+├── assets/
+│   ├── agent_workflow.png        # Diagram
+│   ├── demo.gif                  # Demo gif
+│   ├── graph.png                 # Agent workflow diagram
+│   └── style.css                 # Streamlit custom styling
+├── frontend/                     # (Planned) Vue 3 frontend
 ├── env-example                   # Environment variables template
-├── main.py                       # Main Streamlit app
 ├── README.md                     # This file!
-├── requirements.txt              # Project dependencies
-└── setup_database.py             # Script to initialize the database
+└── requirements.txt              # Project dependencies
 ```
 
 ---
@@ -141,7 +143,7 @@ Follow these steps to set up and run the Virtual Sales Agent:
    ```
 
 4. **Environment Configuration:**
-   - Rename the `.env-example` file to `.env`.
+   - Rename the `env-example` file to `.env`.
    - Set up your API keys:
      - **Google Gemini Flash:** Requires a `GOOGLE_API_KEY`, along with your `GOOGLE_APPLICATION_CREDENTIALS` (path to your credentials file), `GCP_PROJECT_ID` and `REGION`. Obtain these from your Google Cloud Platform (GCP) account at [Google AI Studio](https://aistudio.google.com/).
      - **LangSmith:** Create a [LangSmith](https://smith.langchain.com/) account and get your `LANGCHAIN_API_KEY`. This is for monitoring and debugging agent interactions.
@@ -152,12 +154,12 @@ Follow these steps to set up and run the Virtual Sales Agent:
 
 5. **Initialize the Database:**
    ```bash
-   python3 setup_database.py
+   python backend/setup_database.py
    ```
 
 6. **Launch the Streamlit App:**
    ```bash
-   streamlit run main.py
+   streamlit run backend/main.py
    ```
 
    This will open the application in your web browser, and you can start interacting with the Virtual Sales Agent.
