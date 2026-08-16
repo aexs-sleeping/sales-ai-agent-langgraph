@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Virtual Sales Agent: a Python 3.12+ Streamlit chatbot backed by a LangGraph state machine using Google Vertex AI (`gemini-2.0-flash-exp` via `langchain-google-vertexai`), with a SQLite store database and optional LangSmith tracing. Its signature feature is human-in-the-loop approval: order creation is a "sensitive" tool, and the graph interrupts for explicit user approval before executing it.
+Virtual Sales Agent: a Python 3.12+ Streamlit chatbot backed by a LangGraph state machine using Google Vertex AI (`gemini-2.0-flash-exp` via `langchain-google-vertexai`), with a MySQL store database (SQLAlchemy Core + pymysql) and optional LangSmith tracing. Its signature feature is human-in-the-loop approval: order creation is a "sensitive" tool, and the graph interrupts for explicit user approval before executing it.
 
 There are no tests, no linter/formatting config, and no CI in this repo.
 
-Roadmap (decided with the owner, not started): split into FastAPI backend + Vue 3 frontend, multi-provider LLM support (DeepSeek etc.), migrate SQLite to MySQL. Payment (Alipay/WeChat) is deferred.
+Roadmap (decided with the owner, not started): split into FastAPI backend + Vue 3 frontend, multi-provider LLM support (DeepSeek etc.). Payment (Alipay/WeChat) is deferred.
 
 ## Commands
 
@@ -23,9 +23,10 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 # Environment: copy env-example to .env and fill in keys
 # (README calls it ".env-example" but the actual file is env-example)
 # GOOGLE_API_KEY, GOOGLE_APPLICATION_CREDENTIALS, GCP_PROJECT_ID, REGION,
-# plus LangSmith keys for tracing
+# LangSmith keys for tracing, plus MYSQL_HOST/PORT/USER/PASSWORD/DB
+# (database config raises a clear error if MYSQL_PASSWORD is missing)
 
-# Initialize SQLite DB (schema + seed data) — run from the repo root
+# Initialize MySQL DB (CREATE DATABASE + schema + seed data) — run from the repo root
 python backend/setup_database.py
 
 # Run the app (opens browser at localhost:8501) — run from the repo root
@@ -80,14 +81,18 @@ HITL flow:
 
 ### Database layer (`backend/database/`, `backend/db/`)
 
-- `backend/database/config.py`: `DatabaseConfig` dataclass + `DEFAULT_CONFIG` pin all paths — `backend/db/store.db`, `backend/db/schemas.sql`, `backend/db/products.json` (anchored to `Path(__file__)`). Change paths here, not in callers.
-- `backend/database/db_manager.py`: `DatabaseManager` with context-managed connections (`get_connection`), schema execution, and product insertion. `insert_products_from_json` loads the JSON via pandas and **lowercases** `product_name` and `category` on insert (keys: `product_name`, `category`, `description`, `price`, `quantity`).
-- `backend/setup_database.py`: creates the DB from the schema, then seeds products from the JSON.
+- MySQL (local service `MySQL97`, MySQL 9.7) accessed via SQLAlchemy Core (`mysql+pymysql://`); database name defaults to `store` (utf8mb4).
+- `backend/database/config.py`: `DatabaseConfig` dataclass; `get_config()` loads the repo-root `.env` itself and reads `MYSQL_HOST/PORT/USER/PASSWORD/DB`, **raising a clear error if `MYSQL_PASSWORD` is missing** — credentials are never hardcoded. Also pins schema/seed paths (`backend/db/schemas.sql`, `backend/db/products.json`, anchored to `Path(__file__)`). Change paths here, not in callers.
+- `backend/database/db_manager.py`: `DatabaseManager` with two context managers — `get_connection()` for reads, `transaction()` (`engine.begin()`, commit on success / rollback on error) for writes. `create_database()` does `CREATE DATABASE IF NOT EXISTS` + executes the schema (statements split on `;`). `insert_products_from_json` loads via pandas and **lowercases** `product_name`/`category` (keys: `product_name`, `category`, `description`, `price`, `quantity`).
+- `backend/setup_database.py`: creates DB + schema, seeds demo customer `123456789` (matches the hardcoded `customer_id` in `main.py`), seeds products only when the table is empty (idempotent).
+- `backend/db/schemas.sql`: MySQL dialect (`AUTO_INCREMENT`, CHECK constraints — enforced on MySQL ≥ 8.0.16); creates `customers` (fixes the old dangling FK).
 
 ## Gotchas
 
 - **Env var mismatch:** `graph.py` reads `os.getenv("PROJECT_ID")`, but `env-example` defines `GCP_PROJECT_ID`. Either set `PROJECT_ID` in `.env` or fix the code.
 - `route_tools` and the approval UI in `main.py` both assume a **single tool call** per AI message (they only look at `tool_calls[0]`); parallel tool calls are not handled.
 - `.gitignore` ignores `*.db` and `*.json`; `backend/db/products.json` is tracked only because it predates the rule — new JSON data files would be silently ignored.
-- `schemas.sql` declares `orders.CustomerId` as a FK to a `Customers` table that is never created. Harmless (sqlite3 doesn't enforce FKs by default), but don't assume the table exists.
+- Tools run raw SQL through SQLAlchemy `text()` with `:named` params; rows must be fetched via `.mappings()` — bare `text()` rows are positional-only and string indexing raises `TypeError`.
+- MySQL runs with `ONLY_FULL_GROUP_BY`: every `GROUP BY` query must list all selected non-aggregated columns (see `check_order_status`).
+- MySQL FKs **are enforced** (unlike the old SQLite setup): `create_order` will fail if the customer doesn't exist in `customers` (seeded by `setup_database.py`).
 - `main.py`'s approval flow re-runs the whole Streamlit script per interaction; session state (including `pending_approval`) is the only persistence between reruns.
