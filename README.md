@@ -60,7 +60,7 @@ This Virtual Sales Agent is ideal for:
 
 - **LangChain:** Provides the framework for developing AI-powered conversational applications.
 - **LangGraph:** Enables the creation of sophisticated, stateful agent workflows.
-- **SQLite:** A lightweight database for managing product data and orders.
+- **MySQL:** Store database for products, orders, and customers, accessed via SQLAlchemy Core + pymysql.
 - **Streamlit:** Facilitates the development of interactive web applications for the agent interface.
 - **Gemini Flash 2.0:** A fast and efficient large language model from Google for natural language understanding.
 
@@ -147,6 +147,7 @@ Follow these steps to set up and run the Virtual Sales Agent:
    - Set up your API keys:
      - **Google Gemini Flash:** Requires a `GOOGLE_API_KEY`, along with your `GOOGLE_APPLICATION_CREDENTIALS` (path to your credentials file), `GCP_PROJECT_ID` and `REGION`. Obtain these from your Google Cloud Platform (GCP) account at [Google AI Studio](https://aistudio.google.com/).
      - **LangSmith:** Create a [LangSmith](https://smith.langchain.com/) account and get your `LANGCHAIN_API_KEY`. This is for monitoring and debugging agent interactions.
+     - **MySQL:** Fill in `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DB` with your local MySQL connection settings (defaults target `127.0.0.1:3306` / db `store`).
    - Load environment variables:
      ```bash
      source .env
