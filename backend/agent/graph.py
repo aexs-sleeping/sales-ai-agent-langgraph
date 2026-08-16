@@ -13,14 +13,14 @@ from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.prebuilt import tools_condition
 from typing_extensions import TypedDict
 
-from virtual_sales_agent.tools import (
+from agent.tools import (
     check_order_status,
     create_order,
     get_available_categories,
     search_products,
     search_products_recommendations,
 )
-from virtual_sales_agent.utils import create_tool_node_with_fallback
+from agent.utils import create_tool_node_with_fallback
 
 load_dotenv()
 
