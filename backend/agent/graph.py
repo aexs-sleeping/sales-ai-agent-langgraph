@@ -3,16 +3,15 @@ from datetime import datetime
 from typing import Annotated
 
 from dotenv import load_dotenv
-from google.cloud import aiplatform
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable, RunnableConfig
-from langchain_google_vertexai import ChatVertexAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.prebuilt import tools_condition
 from typing_extensions import TypedDict
 
+from agent.llm import get_llm
 from agent.tools import (
     check_order_status,
     create_order,
@@ -24,20 +23,20 @@ from agent.utils import create_tool_node_with_fallback
 
 load_dotenv()
 
-os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2")
-os.environ["LANGCHAIN_ENDPOINT"] = os.getenv("LANGCHAIN_ENDPOINT")
-os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv(
-    "GOOGLE_APPLICATION_CREDENTIALS"
-)
-os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
-
-PROJECT_ID = os.getenv("PROJECT_ID")
-REGION = os.getenv("REGION")
-
-# Initialize Vertex AI
-aiplatform.init(project=PROJECT_ID, location=REGION)
+# Copy .env values into os.environ for third-party libraries, but only when
+# present — assigning None raises TypeError and made the graph unimportable
+# without LangSmith/Google keys configured.
+for _key in (
+    "LANGCHAIN_API_KEY",
+    "LANGCHAIN_TRACING_V2",
+    "LANGCHAIN_ENDPOINT",
+    "LANGCHAIN_PROJECT",
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    "GOOGLE_API_KEY",
+):
+    _value = os.getenv(_key)
+    if _value is not None:
+        os.environ[_key] = _value
 
 
 class State(TypedDict):
@@ -69,7 +68,9 @@ class Assistant:
         return {"messages": result}
 
 
-llm = ChatVertexAI(model="gemini-2.0-flash-exp")
+# Provider selection is config-driven (LLM_PROVIDER env var, see agent/llm.py);
+# the agent itself only depends on the OpenAI-compatible langchain interface.
+llm = get_llm()
 
 assistant_prompt = ChatPromptTemplate.from_messages(
     [

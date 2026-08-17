@@ -11,3 +11,6 @@ MYSQL_PORT=3306
 MYSQL_USER=root
 MYSQL_PASSWORD=
 MYSQL_DB=store
+# LLM provider: gemini (default, Vertex AI) or deepseek (OpenAI-compatible API)
+LLM_PROVIDER=gemini
+DEEPSEEK_API_KEY=
