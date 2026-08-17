@@ -95,15 +95,21 @@ def _emit_tool_status(chunk: ToolMessage, tool_calls_by_id: Dict[str, dict]) -> 
     """
     tc_id = getattr(chunk, "tool_call_id", None)
     info = tool_calls_by_id.get(tc_id, {})
-    status = "error" if str(chunk.content).startswith(TOOL_ERROR_PREFIX) else "success"
+    content = str(chunk.content)
+    status = "error" if content.startswith(TOOL_ERROR_PREFIX) else "success"
     name = info.get("name") or getattr(chunk, "name", None) or "tool"
     data = _tool_status_data(name, status, info.get("args"))
     if status == "success":
         try:
-            data["result"] = json.loads(str(chunk.content))
-        except (ValueError, TypeError):
-            # Non-JSON tool output: leave the result off rather than failing.
-            pass
+            data["result"] = json.loads(content)
+        except ValueError:
+            # Every tool returns a dict, so non-JSON here is a contract
+            # violation — log it loudly instead of silently dropping the cards.
+            logger.warning(
+                "tool_status(success) for %s carried non-JSON content: %.200s",
+                name,
+                content,
+            )
     yield format_sse("tool_status", data)
 
 

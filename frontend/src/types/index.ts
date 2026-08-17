@@ -7,7 +7,7 @@ export type Role = 'user' | 'assistant' | 'system'
 
 /** Structured blocks rendered inside an assistant message. */
 export type MessageBlock =
-  | { type: 'products'; products: Product[]; recommended?: boolean }
+  | { type: 'products'; products: Product[] }
   | { type: 'order'; order: Order }
   | { type: 'orders'; orders: Order[] }
 
@@ -64,7 +64,7 @@ export interface ToolStatus {
   name: string
   status: ToolStatusKind
   args?: Record<string, any>
-  /** Optional tool output carried by the backend on success (not in PRD, tolerated). */
+  /** Tool's structured JSON output, carried on success (PRD §3.3). */
   result?: unknown
 }
 

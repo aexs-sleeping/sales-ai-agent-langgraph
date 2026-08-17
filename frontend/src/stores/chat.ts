@@ -21,22 +21,12 @@ function nextId(): string {
 let activeController: AbortController | null = null
 let activeMessageId: string | null = null
 let activeMessageObject: ChatMessage | null = null
-let collectedResults: unknown[] = []
+let collectedResults: { name: string; result: unknown }[] = []
 
 function extractToolResult(status: ToolStatus): unknown {
-  if (status.result !== undefined && status.result !== null) return status.result
-  const anyStatus = status as unknown as Record<string, unknown>
-  for (const key of ['output', 'data']) {
-    if (anyStatus[key] !== undefined && anyStatus[key] !== null)
-      return anyStatus[key]
-  }
-  const args = status.args as Record<string, unknown> | undefined
-  if (args) {
-    for (const key of ['result', 'output']) {
-      if (args[key] !== undefined && args[key] !== null) return args[key]
-    }
-  }
-  return null
+  // The SSE contract carries the structured tool output as `result`
+  // (PRD §3.3); other field names are not part of the protocol.
+  return status.result ?? null
 }
 
 export const useChatStore = defineStore('chat', {
@@ -237,7 +227,7 @@ export const useChatStore = defineStore('chat', {
       }
       if (status.status === 'success') {
         const result = extractToolResult(status)
-        if (result !== null) collectedResults.push(result)
+        if (result !== null) collectedResults.push({ name: status.name, result })
       }
     },
 

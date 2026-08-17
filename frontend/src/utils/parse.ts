@@ -2,19 +2,23 @@ import type { MessageBlock, Order, Product } from '@/types'
 
 /**
  * Converts structured tool results (carried by `tool_status(success).result`
- * per PRD §3.3) into renderable blocks.
+ * per PRD §3.3) into renderable blocks, dispatched by tool name.
  *
- * The backend serializes each tool's return value into the result field, so
- * the shapes here mirror the tool return shapes in backend/agent/tools.py:
+ * Tool return shapes mirror the return values in backend/agent/tools.py:
  *   search_products                  -> { status, products: [...], metadata }
  *   search_products_recommendations  -> { status, recommendations: [...] }
- *   get_available_categories         -> { categories: [...] }           (no cards)
  *   check_order_status (single)      -> { status, order_id, order_date, order_status,
  *                                         products: "Name (x1), ...", total_amount }
  *   check_order_status (all)         -> { status, orders: [...] }
  *   create_order                     -> { order_id, status, total_amount,
  *                                         products: [{name, quantity, unit_price}] }
+ *   get_available_categories         -> { categories: [...] }   (renders no cards)
  */
+
+export interface ToolResultEntry {
+  name: string
+  result: unknown
+}
 
 function isRecord(v: unknown): v is Record<string, any> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -50,39 +54,50 @@ function normalizeOrder(raw: Record<string, any>): Order {
   }
 }
 
-/** Map one tool result payload to zero or more renderable blocks. */
-export function blocksFromToolResult(result: unknown): MessageBlock[] {
+/** Map one tool's result payload to zero or more renderable blocks. */
+function blocksForTool(name: string, result: unknown): MessageBlock[] {
   if (!isRecord(result)) return []
-  if (Array.isArray(result.recommendations) && result.recommendations.length > 0) {
-    return [
-      {
-        type: 'products',
-        recommended: true,
-        products: result.recommendations.map((p: any) => normalizeProduct(p, true)),
-      },
-    ]
+  switch (name) {
+    case 'search_products':
+      return Array.isArray(result.products)
+        ? [
+            {
+              type: 'products',
+              products: result.products.map((p: any) => normalizeProduct(p)),
+            },
+          ]
+        : []
+    case 'search_products_recommendations':
+      return Array.isArray(result.recommendations)
+        ? [
+            {
+              type: 'products',
+              products: result.recommendations.map((p: any) => normalizeProduct(p, true)),
+            },
+          ]
+        : []
+    case 'check_order_status':
+      // All-orders query returns an `orders` list; the single-order query
+      // returns one order object directly.
+      if (Array.isArray(result.orders)) {
+        return [
+          { type: 'orders', orders: result.orders.map((o: any) => normalizeOrder(o)) },
+        ]
+      }
+      return result.order_id != null
+        ? [{ type: 'order', order: normalizeOrder(result) }]
+        : []
+    case 'create_order':
+      return result.order_id != null
+        ? [{ type: 'order', order: normalizeOrder(result) }]
+        : []
+    default:
+      // get_available_categories and any unknown tools render no cards.
+      return []
   }
-  if (Array.isArray(result.products)) {
-    // Both search_products (product list) and create_order (order summary
-    // items) use a `products` key; create_order also carries order_id.
-    if (result.order_id != null) {
-      return [{ type: 'order', order: normalizeOrder(result) }]
-    }
-    return [
-      { type: 'products', products: result.products.map((p: any) => normalizeProduct(p)) },
-    ]
-  }
-  if (Array.isArray(result.orders)) {
-    return [{ type: 'orders', orders: result.orders.map((o: any) => normalizeOrder(o)) }]
-  }
-  // check_order_status single-order shape.
-  if (result.order_id != null) {
-    return [{ type: 'order', order: normalizeOrder(result) }]
-  }
-  return []
 }
 
-/** Normalize all tool results of one assistant reply into blocks. */
-export function normalizeToolResults(results: unknown[]): MessageBlock[] {
-  return results.flatMap(blocksFromToolResult)
+/** Normalize the collected tool results of one assistant reply into blocks. */
+export function normalizeToolResults(entries: ToolResultEntry[]): MessageBlock[] {
+  return entries.flatMap(({ name, result }) => blocksForTool(name, result))
 }
