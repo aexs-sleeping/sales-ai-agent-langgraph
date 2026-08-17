@@ -92,7 +92,7 @@ Tools that need customer context declare `*, config: RunnableConfig` — LangGra
 | event | data | meaning |
 |---|---|---|
 | `message` | `{content}` | AI reply token increment |
-| `tool_status` | `{name, status: running\|success\|error, args?}` | tool lifecycle; error detected via the `TOOL_ERROR_PREFIX` in `agent/utils.py` |
+| `tool_status` | `{name, status: running\|success\|error, args?, result?}` | tool lifecycle; error detected via the `TOOL_ERROR_PREFIX` in `agent/utils.py`; `result` (success only) carries the tool's structured JSON output for card rendering |
 | `approval_required` | `{tool_call: {id, name, args}}` | graph interrupted before `create_order`; derived from the already-merged `tool_calls_by_id` |
 | `done` / `error` | `{}` / `{message}` | stream end / failure (any exception becomes an `error` frame, never a crash) |
 
@@ -104,7 +104,7 @@ Tools that need customer context declare `*, config: RunnableConfig` — LangGra
 - `src/api/sse.ts`: `@microsoft/fetch-event-source` POST+SSE transport shared by chat / approve / deny; normalizes failures into `handlers.onError`. `src/api/client.ts`: REST helpers (`createConversation`, shared `parseError`).
 - `src/stores/chat.ts`: Pinia store with one active stream at a time — `runStream()` is the shared setup/teardown for the three actions; `appendContent` writes through a cached message object reference (no per-token array scan).
 - Components under `src/components/`: `chat/` (ChatView, ChatMessage, MessageInput, ToolStatusBar, WelcomeEmpty), `products/ProductCard`, `orders/OrderCard`, `approval/ApprovalCard` (approve/deny + reason dialog), `layout/ChatSidebar` (new conversation, clear).
-- `src/utils/toolLabels.ts` is the single source for tool name → Chinese labels; `src/utils/parse.ts` reconstructs product/order cards from the assistant reply (see gotcha).
+- `src/utils/toolLabels.ts` is the single source for tool name → Chinese labels; `src/utils/parse.ts` normalizes the `tool_status(success).result` payloads into product/order card blocks.
 - Vite dev proxy: `/api` → `http://localhost:8000`.
 
 ### Streamlit client (`backend/main.py`) — legacy, transitional
@@ -122,7 +122,7 @@ Still functional and usable as a fallback: session state holds `messages`, a per
 ## Gotchas
 
 - **Env var mismatch:** `graph.py` reads `os.getenv("PROJECT_ID")`, but `env-example` defines `GCP_PROJECT_ID`. Either set `PROJECT_ID` in `.env` or fix the code.
-- **No tool results in the SSE protocol (open contract decision):** `tool_status` carries only `name/status/args`. The frontend therefore reconstructs product/order cards by scraping JSON out of the assistant reply text (`frontend/src/utils/parse.ts`). A proposed `result` field on `tool_status(success)` would let the backend stream structured tool output and delete most of `parse.ts` — discussed with the owner, **not merged**.
+- **Tool results arrive via SSE:** `tool_status(success)` carries a `result` field with the tool's structured JSON output; the frontend builds product/order cards from it (`frontend/src/utils/parse.ts` → `normalizeToolResults`). Tool result shapes mirror the return values in `agent/tools.py`.
 - **Google credentials gate real chat:** `agent.graph` runs `load_dotenv()` + `aiplatform.init()` at import. The FastAPI layer lazy-imports it, so the server boots and `/api/health`/`/api/conversations` work without Google keys, but `/api/chat` emits an `error` SSE frame until `GOOGLE_*` (and the DB) are configured. `DEEPSEEK_API_KEY` is present but unconsumed.
 - **Process-local conversation state:** MemorySaver + the in-memory `CONVERSATIONS` dict are lost on restart; there is no persistence yet.
 - `route_tools` and the approval flows (both Streamlit `main.py` and the FastAPI `deny` endpoint) assume a **single tool call** per AI message (`tool_calls[0]`); parallel tool calls are not handled.

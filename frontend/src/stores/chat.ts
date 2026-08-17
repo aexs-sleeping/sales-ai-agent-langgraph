@@ -8,11 +8,7 @@ import type {
   SSEHandlers,
   ToolStatus,
 } from '@/types'
-import {
-  blocksFromToolResult,
-  dedupeBlocks,
-  parseStructuredBlocks,
-} from '@/utils/parse'
+import { normalizeToolResults } from '@/utils/parse'
 
 let idCounter = 0
 function nextId(): string {
@@ -261,11 +257,9 @@ export const useChatStore = defineStore('chat', {
       const msg = activeMessageObject ?? (id ? this.messages.find((m) => m.id === id) : null)
       if (!msg) return
       msg.streaming = false
-      const parsed = parseStructuredBlocks(msg.content)
-      const toolBlocks = collectedResults
-        .map((r) => blocksFromToolResult(r))
-        .flat()
-      msg.blocks = dedupeBlocks([...parsed, ...toolBlocks])
+      // Cards come from the structured tool results carried by
+      // `tool_status(success).result` (PRD §3.3); the text stays as text.
+      msg.blocks = normalizeToolResults(collectedResults)
     },
 
     handleError(message: string) {

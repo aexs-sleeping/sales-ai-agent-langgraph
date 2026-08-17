@@ -87,12 +87,24 @@ def _emit_tool_running(
 
 
 def _emit_tool_status(chunk: ToolMessage, tool_calls_by_id: Dict[str, dict]) -> Iterator[str]:
-    """Emit `tool_status(success|error)` once a tool has produced its result."""
+    """Emit `tool_status(success|error)` once a tool has produced its result.
+
+    On success the tool's structured output (serialized JSON in the ToolMessage
+    content) is attached as `result`, so the frontend can render product/order
+    cards without scraping the assistant's reply text (PRD §3.3).
+    """
     tc_id = getattr(chunk, "tool_call_id", None)
     info = tool_calls_by_id.get(tc_id, {})
     status = "error" if str(chunk.content).startswith(TOOL_ERROR_PREFIX) else "success"
     name = info.get("name") or getattr(chunk, "name", None) or "tool"
-    yield format_sse("tool_status", _tool_status_data(name, status, info.get("args")))
+    data = _tool_status_data(name, status, info.get("args"))
+    if status == "success":
+        try:
+            data["result"] = json.loads(str(chunk.content))
+        except (ValueError, TypeError):
+            # Non-JSON tool output: leave the result off rather than failing.
+            pass
+    yield format_sse("tool_status", data)
 
 
 def event_stream(graph, graph_input: Any, config: dict) -> Iterator[str]:

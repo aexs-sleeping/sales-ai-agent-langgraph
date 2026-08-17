@@ -91,7 +91,7 @@
 | 事件类型 | data 载荷 | 说明 |
 |---|---|---|
 | `message` | `{ "content": string }` | AI 回复 token 增量（前端累积拼接） |
-| `tool_status` | `{ "name": string, "status": "running"\|"success"\|"error", "args": object? }` | 工具调用生命周期提示 |
+| `tool_status` | `{ "name": string, "status": "running"\|"success"\|"error", "args": object?, "result": object? }` | 工具调用生命周期提示；`result` 仅 success 携带（工具结构化输出的 JSON），前端据此渲染商品/订单卡片 |
 | `approval_required` | `{ "tool_call": { "id": string, "name": string, "args": object } }` | 需要人工审批（仅下单 `create_order`） |
 | `done` | `{}` | 本次流结束（正常） |
 | `error` | `{ "message": string }` | 本次流失败 |

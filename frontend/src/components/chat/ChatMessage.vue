@@ -44,7 +44,6 @@ function forwardAsk(text: string) {
       <!-- Structured cards (F5/F7/F8/F9) -->
       <template v-for="(block, i) in message.blocks" :key="i">
         <div v-if="block.type === 'products'" class="block">
-          <div v-if="block.recommended" class="block-title">为您推荐</div>
           <div class="product-grid">
             <ProductCard
               v-for="p in block.products"
@@ -163,12 +162,6 @@ function forwardAsk(text: string) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.block-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #b45309;
 }
 
 .product-grid {
