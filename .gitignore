@@ -15,3 +15,5 @@ downloads/
 .vscode
 *.db
 *.json
+# Claude Code worktrees and session metadata
+.claude/
