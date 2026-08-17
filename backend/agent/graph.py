@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 from typing import Annotated
 
@@ -21,22 +20,9 @@ from agent.tools import (
 )
 from agent.utils import create_tool_node_with_fallback
 
+# load_dotenv merges .env into os.environ (which LangSmith / Google SDKs read
+# directly), so no manual env copying is needed here.
 load_dotenv()
-
-# Copy .env values into os.environ for third-party libraries, but only when
-# present — assigning None raises TypeError and made the graph unimportable
-# without LangSmith/Google keys configured.
-for _key in (
-    "LANGCHAIN_API_KEY",
-    "LANGCHAIN_TRACING_V2",
-    "LANGCHAIN_ENDPOINT",
-    "LANGCHAIN_PROJECT",
-    "GOOGLE_APPLICATION_CREDENTIALS",
-    "GOOGLE_API_KEY",
-):
-    _value = os.getenv(_key)
-    if _value is not None:
-        os.environ[_key] = _value
 
 
 class State(TypedDict):

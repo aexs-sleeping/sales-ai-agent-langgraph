@@ -30,10 +30,8 @@ grpcio==1.68.1
 grpcio-status==1.68.1
 h11==0.14.0
 httpcore==1.0.7
-httpcore2==2.10.0
 httpx==0.27.2
 httpx-sse==0.4.0
-httpx2==2.10.0
 idna==3.10
 Jinja2==3.1.5
 jiter==0.16.0
@@ -44,7 +42,6 @@ jsonschema-specifications==2024.10.1
 langchain-core==0.3.28
 langchain-google-vertexai==2.0.9
 langchain-openai==0.2.14
-langchain-protocol==0.0.18
 langgraph==0.2.60
 langgraph-checkpoint==2.0.9
 langgraph-sdk==0.1.48
@@ -98,9 +95,5 @@ typing-inspection==0.4.4
 typing_extensions==4.16.0
 tzdata==2024.2
 urllib3==2.3.0
-uuid_utils==0.17.0
 uvicorn==0.52.3
 watchdog==6.0.0
-websockets==17.0.1
-xxhash==4.0.0
-zstandard==0.25.0

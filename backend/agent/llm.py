@@ -1,9 +1,12 @@
-"""LLM provider factory — config-driven, OpenAI-compatible-first.
+"""LLM provider factory — config-driven.
 
-The agent is built against the OpenAI-compatible interface as its baseline:
-any OpenAI-compatible provider (DeepSeek etc.) should plug in by setting
-`LLM_PROVIDER` plus the matching `*_API_KEY` env vars. Gemini (Vertex AI)
-remains the default for backward compatibility.
+The agent only depends on the OpenAI-compatible langchain chat-model
+interface, so any provider is interchangeable from the agent's perspective.
+Supported providers (set via `LLM_PROVIDER`):
+  - deepseek: DeepSeek-V4-Flash over the OpenAI-compatible API
+    (requires DEEPSEEK_API_KEY)
+  - gemini:  Google Vertex AI Gemini Flash (default; requires
+    GCP_PROJECT_ID and REGION)
 """
 
 import os
@@ -16,7 +19,7 @@ def get_llm() -> BaseChatModel:
     provider = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
 
     if provider == "deepseek":
-        api_key = os.getenv("DEEPSEEK_API_KEY", "")
+        api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
             raise ValueError(
                 "LLM_PROVIDER=deepseek requires DEEPSEEK_API_KEY. "

@@ -2,8 +2,8 @@
 
 The LangGraph agent (`agent.graph.graph`) is imported lazily inside each handler
 so that `/api/health` and `/api/conversations` (and server startup) work even
-when Google Vertex AI credentials are missing. A failed import is surfaced to
-the client as an SSE `error` event instead of crashing the worker.
+when the selected LLM provider is not configured. A failed import is surfaced
+to the client as an SSE `error` event instead of crashing the worker.
 """
 
 import logging
